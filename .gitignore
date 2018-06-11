@@ -1,0 +1,25 @@
+*.orig
+Debug/*
+Release/*
+Release 256/*
+Release Mixed/*
+*.ncb
+*.suo
+msgpack-c
+*.swp
+*.o
+*.pyc
+tags
+bin/*
+Backup/*
+*.user
+*.cache
+UpgradeLog*
+*.opensdf
+*.sdf
+HS.APS
+*.db
+*.opendb
+*.aps
+doxygen/*
+*.ipch
