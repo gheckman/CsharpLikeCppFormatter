@@ -13,14 +13,14 @@ class hello_world
 {
     friend std::ostream& operator << (std::ostream& os, const hello_world& rhs)
     {
-        os << "Hello world!";
+        os << "Hello world";
         return os;
     }
 };
 
 int main(int argc, char** argv)
 {
-    cout << format("{3} + {1}.{1} = {2}{0}\n{4}", '!', 2, "5", 2.8, hello_world{}) << endl;
+    cout << format("{3:F1} + {1}.{1} = {2}\n{4}{0}", '!', 2, "5", 2.8, hello_world{}) << endl;
 
     char _1;
     cin >> _1;

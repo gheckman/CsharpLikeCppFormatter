@@ -5,9 +5,12 @@
 
 #pragma once
 
-#include <algorithm>
+#include <iomanip>
+#include <regex>
 #include <sstream>
 #include <string>
+
+#include "regex_ext.h"
 
 /*
 Formats strings.
@@ -19,6 +22,9 @@ namespace string_format
     */
     namespace detail
     {
+        template <typename T>
+        struct class_tag {};
+
         /*
         Converts the type T to a string.
         Only exists if the type T is a valid argument to std::to_string.
@@ -27,7 +33,7 @@ namespace string_format
         @param [in] _2 Bool tag
         */
         template <typename T>
-        auto get_t_as_string_tagged_(T&& t, bool) -> decltype(std::to_string(t))
+        inline auto get_t_as_string_tagged_(const T& t, bool) -> decltype(std::to_string(t))
         {
             return std::to_string(t);
         }
@@ -39,7 +45,7 @@ namespace string_format
         @param [in] _2 Int tag
         */
         template <typename T>
-        std::string get_t_as_string_tagged_(T&& t, int)
+        inline std::string get_t_as_string_tagged_(const T& t, int)
         {
             std::stringstream ss;
             ss << t;
@@ -52,21 +58,119 @@ namespace string_format
         @param [in] t Some instance of type T
         */
         template <typename T>
-        auto get_t_as_string_(T&& t)
+        inline std::string get_t_as_string_(const T& t)
         {
-            // Uses tag dispatch to prioritize the more efficent string conversion
-            return get_t_as_string_tagged_(std::forward<T>(t), true);
+            // Uses a simple bool/int based tag dispatch to prioritize the more efficent string conversion
+            return get_t_as_string_tagged_(t, true);
         }
 
         /*
-        Converts the type T to a string.
+        Converts the type char to a string.
         @tparam T A character type
-        @param [in] t Some instance of type T
+        @param [in] t Some instance of type char
         */
         template <>
-        auto get_t_as_string_<char>(char&& t)
+        inline std::string get_t_as_string_<char>(const char& t)
         {
             return std::string(1, t);
+        }
+
+        template <typename T>
+        inline std::string get_t_as_string_(const T& t, const std::string& argument)
+        {
+            // Selects the appropriate parameterized formatter based on the type
+            class_tag<std::decay_t<T>> tag{};
+            return get_t_as_string_impl_(t, argument, tag);
+        }
+
+        template <typename T, typename Tag>
+        inline std::string get_t_as_string_impl_(const T& t, const std::string& argument, Tag)
+        {
+            // Selects the basic formatter with no arguments
+            return get_t_as_string_(t);
+        }
+
+#pragma region floating point
+
+        /*
+        Tagged function for choosing the floating point formatter for float.
+        @tparam T  float
+        @param [in] t        Some instance of float
+        @param [in] argument Can be of the form N, Fa, Ea, Xa, where a is some integer
+        @param [in] _3       Tag for float
+        */
+        template <typename T>
+        inline std::string get_t_as_string_impl_(const T& t, const std::string& argument, class_tag<float>)
+        {
+            return get_floating_point_as_string_(t, argument);
+        }
+
+        /*
+        Tagged function for choosing the floating point formatter for double.
+        @tparam T  double
+        @param [in] t        Some instance of double
+        @param [in] argument Can be of the form N, Fa, Ea, Xa, where a is some integer
+        @param [in] _3       Tag for double
+        */
+        template <typename T>
+        inline std::string get_t_as_string_impl_(const T& t, const std::string& argument, class_tag<double>)
+        {
+            return get_floating_point_as_string_(t, argument);
+        }
+
+        /*
+        Tagged function for choosing the floating point formatter for long double.
+        @tparam T  long double
+        @param [in] t        Some instance of long double
+        @param [in] argument Can be of the form N, Fa, Ea, Xa, where a is some integer
+        @param [in] _3       Tag for long double
+        */
+        template <typename T>
+        inline std::string get_t_as_string_impl_(const T& t, const std::string& argument, class_tag<long double>)
+        {
+            return get_floating_point_as_string_(t, argument);
+        }
+
+        /*
+        Parameterized floating point formatter.
+        Formats float, double, or long double types.
+        @tparam T  float, double, or long double
+        @tparam _2 Disables the function is the type argument is not float, double, or long double
+        @param [in] t        Some instance of type T
+        @param [in] argument Can be of the form N, Fa, Ea, Xa, where a is some integer
+        */
+        template <typename T, typename = std::enable_if<std::is_floating_point<T>::value>>
+        inline std::string get_floating_point_as_string_(const T& t, const std::string& argument)
+        {
+            // Floating point (float, double, long double) formatter
+            std::stringstream ss;
+            switch (::tolower(argument[0]))
+            {
+                case 'f': ss << std::fixed; break;
+                case 'n': ss << std::noshowpoint; break;
+                case 'e': ss << std::scientific; break;
+                case 'x': ss << std::hexfloat; break;
+            }
+            if (argument.size() > 1)
+                ss << std::setprecision(atoi(&argument[1]));
+            ss << t;
+            return ss.str();
+        }
+
+#pragma endregion
+
+        /*
+        Regex formatting callback.
+        Formats a single regex match.
+        @tparam T Some type
+        @param [in] sm Sub-match expression. Example: {0} or {0:arg}.
+        @param [in] t  Some instance of type T
+        */
+        template <typename T>
+        inline std::string format_match_(const std::smatch& sm, const T& t)
+        {
+            auto argument = sm.str(1);
+            return argument.empty() ? get_t_as_string_(t) : get_t_as_string_(t, argument.substr(1));
         }
 
         /*
@@ -79,16 +183,10 @@ namespace string_format
         @param [in]      t Some instance of type T
         */
         template <typename T>
-        void format_detail_(std::string& s, int& i, T&& t)
+        inline void format_detail_(std::string& s, int& i, const T& t)
         {
-            std::string t_to_string(get_t_as_string_(std::forward<T>(t)));
-            std::string format_index = '{' + std::to_string(i) + '}';
-            auto pos = s.find(format_index);
-            while (pos != std::string::npos)
-            {
-                s.replace(pos, format_index.size(), t_to_string);
-                pos = s.find(format_index, pos + 1);
-            }
+            std::regex r("\\{" + std::to_string(i) + "(:[a-zA-Z0-9]*)?\\}");
+            s = std_ext::regex_replace(s, r, [&](const std::smatch& sm) { return format_match_(sm, t); });
             ++i;
         }
 
@@ -101,9 +199,9 @@ namespace string_format
         @param [in]      t Last object in parameter pack
         */
         template <typename T>
-        void format_(std::string& s, int i, T&& t)
+        inline void format_(std::string& s, int i, const T& t)
         {
-            format_detail_(s, i, std::forward<T>(t));
+            format_detail_(s, i, t);
         }
 
         /*
@@ -118,9 +216,9 @@ namespace string_format
         @param [in]      ...args The rest of the parameter pack
         */
         template <typename T, typename ...Args>
-        void format_(std::string& s, int i, T&& t, Args&&... args)
+        inline void format_(std::string& s, int i, const T& t, Args&&... args)
         {
-            format_detail_(s, i, std::forward<T>(t));
+            format_detail_(s, i, t);
             format_(s, i, std::forward<Args>(args)...);
         }
     }
@@ -139,7 +237,7 @@ namespace string_format
     @param [in] ...args Parameter pack
     */
     template <typename ...Args>
-    std::string format(std::string s, Args&&... args)
+    inline std::string format(std::string s, Args&&... args)
     {
         detail::format_(s, 0, std::forward<Args>(args)...);
         return s;
