@@ -184,8 +184,30 @@ namespace string_format
         template <typename T>
         inline std::string format_match_(const std::smatch& sm, const T& t)
         {
-            auto argument = sm.str(1);
-            return argument.empty() ? get_t_as_string_(t) : get_t_as_string_(t, argument.substr(1));
+            std::string rv;
+            auto alignment = sm.str(1);
+            auto argument = sm.str(2);
+            rv = argument.empty() ? get_t_as_string_(t) : get_t_as_string_(t, argument.substr(1));
+            if (!alignment.empty())
+                rv = align_string_(alignment, rv);
+            return rv;
+        }
+
+        /**
+        Aligns the string.
+        @tparam T Some type
+        @param [in] sm Sub-match expression. Example: {0} or {0:arg}.
+        @param [in] t  Some instance of type T
+        */
+        inline std::string align_string_(const std::string& alignment, const std::string& rv)
+        {
+            auto alignment_head = alignment.c_str() + 1;
+            bool left_aligned = *alignment_head == '-';
+            if (left_aligned)
+                ++alignment_head;
+            int size = ::atoi(alignment_head) - rv.size();
+            size = std::max(0, std::min(size, 99));
+            return left_aligned ? rv + std::string(size, ' ') : std::string(size, ' ') + rv;
         }
 
         /**
@@ -200,7 +222,14 @@ namespace string_format
         template <typename T>
         inline void format_detail_(std::string& s, int& i, const T& t)
         {
-            std::regex r("\\{" + std::to_string(i) + "(:[a-zA-Z0-9 -]*)?\\}");
+            /*
+            \\{i                    Match an opening curly brace then some specific integer
+                (,-?[0-9]+)?            Optionally, match a comma, optionally a hyphen, then some digits. Example: ,-12 or ,3
+                (:[a-zA-Z][0-9]+)?      Optionally, match a colon, then a character, then optionally some digits. Example: :F0, N
+            \\}                     Match an ending curly brace
+            Examples: {0} {0:F0} {0:,-12} {0:3,N}
+            */
+            std::regex r("\\{" + std::to_string(i) + "(,-?[0-9]+)?(:[a-zA-Z][0-9]*)?\\}");
             s = std_ext::regex_replace(s, r, [&](const std::smatch& sm) { return format_match_(sm, t); });
             ++i;
         }

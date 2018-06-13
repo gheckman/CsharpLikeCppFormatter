@@ -20,7 +20,7 @@ class hello_world
 
 #pragma region simple format prvalue
 
-BOOST_AUTO_TEST_CASE(simple_format_prvalue_char, * utf::label("simple_format_prvalue"))
+BOOST_AUTO_TEST_CASE(simple_format_prvalue_char, *utf::label("simple_format_prvalue"))
 {
     auto s = format("{0}", '1');
     BOOST_REQUIRE_EQUAL(s, "1");
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(format_argument_float_f4, *utf::label("argument_float"))
 BOOST_AUTO_TEST_CASE(format_argument_float_e4, *utf::label("argument_float"))
 {
     auto s = format("{0:E4}", 123.4567f);
-    // Nnumber gets rounded
+    // Number gets rounded
     BOOST_REQUIRE_EQUAL(s, "1.2346e+02");
 }
 
