@@ -1,4 +1,4 @@
-/*
+/**
 @file string_format.h
 @brief Formats strings.
 */
@@ -12,24 +12,24 @@
 
 #include "regex_ext.h"
 
-/*
+/**
 Formats strings.
 */
 namespace string_format
 {
-    /*
+    /**
     Detail namespace.
     */
     namespace detail
     {
-        /*
+        /**
         Struct used for tag dispatching.
         @tparam T Some type
         */
         template <typename T>
         struct class_tag {};
 
-        /*
+        /**
         Converts the type T to a string.
         Only exists if the type T is a valid argument to std::to_string.
         @tparam T Some type
@@ -42,7 +42,7 @@ namespace string_format
             return std::to_string(t);
         }
 
-        /*
+        /**
         Converts the type T to a string using a stringstream.
         @tparam T Some type
         @param [in] t  Some instance of type T
@@ -56,7 +56,7 @@ namespace string_format
             return ss.str();
         }
 
-        /*
+        /**
         Converts the type T to a string.
         @tparam T Some type
         @param [in] t Some instance of type T
@@ -68,7 +68,7 @@ namespace string_format
             return get_t_as_string_tagged_(t, true);
         }
 
-        /*
+        /**
         Converts the type char to a string.
         @tparam T A character type
         @param [in] t Some instance of type char
@@ -79,7 +79,7 @@ namespace string_format
             return std::string(1, t);
         }
 
-        /*
+        /**
         Converts the type T to a string.
         @tparam T Some type
         @param [in] t Some instance of type T
@@ -91,7 +91,7 @@ namespace string_format
             return get_t_as_string_(t);
         }
 
-        /*
+        /**
         Converts the type T to a string.
         This is the entry point to the more specific formatting functions.
         @tparam T Some type
@@ -108,7 +108,7 @@ namespace string_format
 
 #pragma region floating point
 
-        /*
+        /**
         Tagged function for choosing the floating point formatter for float.
         @tparam T float
         @param [in] t        Some instance of float
@@ -121,7 +121,7 @@ namespace string_format
             return get_floating_point_as_string_(t, argument);
         }
 
-        /*
+        /**
         Tagged function for choosing the floating point formatter for double.
         @tparam T double
         @param [in] t        Some instance of double
@@ -134,7 +134,7 @@ namespace string_format
             return get_floating_point_as_string_(t, argument);
         }
 
-        /*
+        /**
         Tagged function for choosing the floating point formatter for long double.
         @tparam T long double
         @param [in] t        Some instance of long double
@@ -147,7 +147,7 @@ namespace string_format
             return get_floating_point_as_string_(t, argument);
         }
 
-        /*
+        /**
         Parameterized floating point formatter.
         Formats float, double, or long double types.
         @tparam T  float, double, or long double
@@ -174,7 +174,7 @@ namespace string_format
 
 #pragma endregion
 
-        /*
+        /**
         Regex formatting callback.
         Formats a single regex match.
         @tparam T Some type
@@ -188,7 +188,7 @@ namespace string_format
             return argument.empty() ? get_t_as_string_(t) : get_t_as_string_(t, argument.substr(1));
         }
 
-        /*
+        /**
         Formats text based on bracket delimited indecies and arguments.
         This is the base case of the recursive parameter pack call.
         Increments the index of the format string.
@@ -205,7 +205,7 @@ namespace string_format
             ++i;
         }
 
-        /*
+        /**
         Formats text based on bracket delimited indecies and arguments.
         This is the base case of the recursive parameter pack call.
         @tparam T Some type
@@ -219,7 +219,7 @@ namespace string_format
             format_detail_(s, i, t);
         }
 
-        /*
+        /**
         Formats text based on bracket delimited indecies and arguments.
         Splits off the first object in the parameter pack to be formatted.
         Then calls itself recursively.
@@ -238,13 +238,13 @@ namespace string_format
         }
     }
 
-    /*
+    /**
     Just returns the string passed in.
     @param [in] s Format string
     */
     inline std::string format(std::string s) { return s; }
 
-    /*
+    /**
     Formats text based on bracket delimited indecies and arguments.
     Example: format("{1} bar {0}", 1.2345, "foo") will yield "foo bar 1.2345"
     @tparam ...Args Variadic arguments

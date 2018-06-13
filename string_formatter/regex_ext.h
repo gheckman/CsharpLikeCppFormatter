@@ -1,4 +1,4 @@
-/*
+/**
 @file regex_ext.h
 Regex extensions I took off stackoverflow.
 */
@@ -8,12 +8,12 @@ Regex extensions I took off stackoverflow.
 #include <string>
 #include <regex>
 
-/*
+/**
 Standard extensions namespace.
 */
 namespace std_ext
 {
-    /*
+    /**
     Replaces the matching regular expression string using the formatting function.
     @tparam BidirIt       Bidirectional iterator
     @tparam Traits        Regex traits
@@ -60,7 +60,7 @@ namespace std_ext
         return s;
     }
 
-    /*
+    /**
     Replaces the matching regular expression string using the formatting function.
     @tparam Traits        Regex traits
     @tparam CharT         Character type
