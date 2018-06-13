@@ -22,6 +22,10 @@ namespace string_format
     */
     namespace detail
     {
+        /*
+        Struct used for tag dispatching.
+        @tparam T Some type
+        */
         template <typename T>
         struct class_tag {};
 
@@ -75,28 +79,40 @@ namespace string_format
             return std::string(1, t);
         }
 
-        template <typename T>
-        inline std::string get_t_as_string_(const T& t, const std::string& argument)
-        {
-            // Selects the appropriate parameterized formatter based on the type
-            class_tag<std::decay_t<T>> tag{};
-            return get_t_as_string_impl_(t, argument, tag);
-        }
-
-        template <typename T, typename Tag>
-        inline std::string get_t_as_string_impl_(const T& t, const std::string& argument, Tag)
+        /*
+        Converts the type T to a string.
+        @tparam T Some type
+        @param [in] t Some instance of type T
+        */
+        template <typename T, typename ClassTag>
+        inline std::string get_t_as_string_impl_(const T& t, const std::string& argument, ClassTag)
         {
             // Selects the basic formatter with no arguments
             return get_t_as_string_(t);
+        }
+
+        /*
+        Converts the type T to a string.
+        This is the entry point to the more specific formatting functions.
+        @tparam T Some type
+        @param [in] t        Some instance of type T
+        @param [in] argument Argument to the formatter. Argument format is dependant on type T
+        */
+        template <typename T>
+        inline std::string get_t_as_string_(const T& t, const std::string& argument)
+        {
+            // Uses tag dispatch to select the appropriate parameterized formatter based on the type
+            class_tag<std::decay_t<T>> tag{};
+            return get_t_as_string_impl_(t, argument, tag);
         }
 
 #pragma region floating point
 
         /*
         Tagged function for choosing the floating point formatter for float.
-        @tparam T  float
+        @tparam T float
         @param [in] t        Some instance of float
-        @param [in] argument Can be of the form N, Fa, Ea, Xa, where a is some integer
+        @param [in] argument Can be of the form Fa, Ea, Xa, where a is some integer
         @param [in] _3       Tag for float
         */
         template <typename T>
@@ -107,9 +123,9 @@ namespace string_format
 
         /*
         Tagged function for choosing the floating point formatter for double.
-        @tparam T  double
+        @tparam T double
         @param [in] t        Some instance of double
-        @param [in] argument Can be of the form N, Fa, Ea, Xa, where a is some integer
+        @param [in] argument Can be of the form Fa, Ea, Xa, where a is some integer
         @param [in] _3       Tag for double
         */
         template <typename T>
@@ -120,9 +136,9 @@ namespace string_format
 
         /*
         Tagged function for choosing the floating point formatter for long double.
-        @tparam T  long double
+        @tparam T long double
         @param [in] t        Some instance of long double
-        @param [in] argument Can be of the form N, Fa, Ea, Xa, where a is some integer
+        @param [in] argument Can be of the form Fa, Ea, Xa, where a is some integer
         @param [in] _3       Tag for long double
         */
         template <typename T>
@@ -137,7 +153,7 @@ namespace string_format
         @tparam T  float, double, or long double
         @tparam _2 Disables the function is the type argument is not float, double, or long double
         @param [in] t        Some instance of type T
-        @param [in] argument Can be of the form N, Fa, Ea, Xa, where a is some integer
+        @param [in] argument Can be of the form Fa, Ea, Xa, where a is some integer
         */
         template <typename T, typename = std::enable_if<std::is_floating_point<T>::value>>
         inline std::string get_floating_point_as_string_(const T& t, const std::string& argument)
@@ -147,12 +163,11 @@ namespace string_format
             switch (::tolower(argument[0]))
             {
                 case 'f': ss << std::fixed; break;
-                case 'n': ss << std::noshowpoint; break;
                 case 'e': ss << std::scientific; break;
                 case 'x': ss << std::hexfloat; break;
             }
             if (argument.size() > 1)
-                ss << std::setprecision(atoi(&argument[1]));
+                ss << std::setprecision(std::min(::atoi(&argument[1]), 99));
             ss << t;
             return ss.str();
         }
@@ -185,7 +200,7 @@ namespace string_format
         template <typename T>
         inline void format_detail_(std::string& s, int& i, const T& t)
         {
-            std::regex r("\\{" + std::to_string(i) + "(:[a-zA-Z0-9]*)?\\}");
+            std::regex r("\\{" + std::to_string(i) + "(:[a-zA-Z0-9 -]*)?\\}");
             s = std_ext::regex_replace(s, r, [&](const std::smatch& sm) { return format_match_(sm, t); });
             ++i;
         }

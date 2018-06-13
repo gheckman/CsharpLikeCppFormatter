@@ -20,7 +20,7 @@ class hello_world
 
 int main(int argc, char** argv)
 {
-    cout << format("{3:F1} + {1}.{1} = {2}\n{4}{0}", '!', 2, "5", 2.8, hello_world{}) << endl;
+    cout << format("{3:F2} + {1}.{1} = {2}\n{4}{0}", '!', 2, "5", 2.8, hello_world{}) << endl;
 
     char _1;
     cin >> _1;
